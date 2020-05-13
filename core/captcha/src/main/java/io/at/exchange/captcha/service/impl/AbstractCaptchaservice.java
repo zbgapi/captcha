@@ -4,26 +4,25 @@
  *http://www.anji-plus.com
  *All rights reserved.
  */
-package com.anji.captcha.service.impl;
+package io.at.exchange.captcha.service.impl;
 
-import com.anji.captcha.config.Container;
-import com.anji.captcha.service.CaptchaCacheService;
-import com.anji.captcha.service.CaptchaService;
-import com.anji.captcha.util.AESUtil;
-import com.anji.captcha.util.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import io.at.exchange.captcha.service.CaptchaCacheService;
+import io.at.exchange.captcha.service.CaptchaService;
+import io.at.exchange.captcha.util.AESUtil;
+import io.at.exchange.captcha.util.StringUtils;
+import io.at.base.config.SignCacheConfig;
 import sun.misc.BASE64Decoder;
 import sun.misc.BASE64Encoder;
 
-import javax.annotation.PostConstruct;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URL;
-import java.util.Map;
 
 /**
- * Created by raodeming on 2019/12/25.
+ *
+ * @author raodeming
+ * @date 2019/12/25
  */
 public abstract class AbstractCaptchaservice implements CaptchaService {
 
@@ -38,12 +37,14 @@ public abstract class AbstractCaptchaservice implements CaptchaService {
 
     protected static int HAN_ZI_SIZE = 25;
 
-    protected static int HAN_ZI_SIZE_HALF = HAN_ZI_SIZE/2;
+    protected static int HAN_ZI_SIZE_HALF = HAN_ZI_SIZE / 2;
 
     //check校验坐标
+
     protected static String REDIS_CAPTCHA_KEY = "RUNNING:CAPTCHA:%s";
 
     //后台二次校验坐标
+
     protected static String REDIS_SECOND_CAPTCHA_KEY = "RUNNING:CAPTCHA:second-%s";
 
     protected static Long EXPIRESIN_SECONDS = 2 * 60L;
@@ -53,37 +54,23 @@ public abstract class AbstractCaptchaservice implements CaptchaService {
     protected CaptchaCacheService captchaCacheService;
 
     //判断应用是否实现了自定义缓存，没有就使用内存
-    @PostConstruct
-    public void init(){
-        Map<String, CaptchaCacheService> map = Container.getBeanOfType(CaptchaCacheService.class);
-        if(map == null || map.isEmpty()){
-            captchaCacheService = Container.getBean("captchaCacheServiceMemImpl", CaptchaCacheService.class);
-            return;
-        }
-        if(map.size()==1){
-            captchaCacheService = Container.getBean("captchaCacheServiceMemImpl", CaptchaCacheService.class);
-            return;
-        }
-        if(map.size()>=2){
-            map.entrySet().stream().forEach(item ->{
-                if(captchaCacheService != null){
-                    return;
-                }
-                if(!"captchaCacheServiceMemImpl".equals(item.getKey())){
-                    captchaCacheService = item.getValue();
-                    return;
-                }
-            });
+
+
+    public AbstractCaptchaservice() {
+        if (SignCacheConfig.isRedis()) {
+            this.captchaCacheService = new CaptchaCacheServiceRedisImpl();
+        } else {
+            this.captchaCacheService = new CaptchaCacheServiceMemImpl();
         }
     }
 
     /**
-     *
      * 获取原生图片
+     *
      * @param urlOrPath
      * @return
      */
-    protected static BufferedImage getBufferedImage (String urlOrPath) {
+    protected static BufferedImage getBufferedImage(String urlOrPath) {
         if (StringUtils.isBlank(urlOrPath)) {
 //            throw new CaptchaException("urlOrPath is empty.");
         }
@@ -94,7 +81,7 @@ public abstract class AbstractCaptchaservice implements CaptchaService {
             } else {
                 sampleImage = ImageIO.read(new File(urlOrPath));
             }
-        } catch (IOException e ){
+        } catch (IOException e) {
             e.printStackTrace();
         }
         return sampleImage;
@@ -102,10 +89,11 @@ public abstract class AbstractCaptchaservice implements CaptchaService {
 
     /**
      * 图片转base64 字符串
+     *
      * @param templateImage
      * @return
      */
-    protected String getImageToBase64Str (BufferedImage templateImage){
+    protected String getImageToBase64Str(BufferedImage templateImage) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
             ImageIO.write(templateImage, "png", baos);
@@ -142,11 +130,17 @@ public abstract class AbstractCaptchaservice implements CaptchaService {
         this.fontColorRandom = fontColorRandom;
     }
 
-    /** 滑块拼图图片地址 */
+    /**
+     * 滑块拼图图片地址
+     */
     private String jigsawUrlOrPath;
-    /** 点选文字 字体总个数 */
+    /**
+     * 点选文字 字体总个数
+     */
     private int wordTotalCount = 4;
-    /** 点选文字 字体颜色是否随机 */
+    /**
+     * 点选文字 字体颜色是否随机
+     */
     private boolean fontColorRandom = Boolean.TRUE;
 
     public static boolean base64StrToImage(String imgStr, String path) {
@@ -180,6 +174,7 @@ public abstract class AbstractCaptchaservice implements CaptchaService {
 
     /**
      * 解密前端坐标aes加密
+     *
      * @param point
      * @return
      * @throws Exception

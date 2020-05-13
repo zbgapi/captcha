@@ -4,45 +4,48 @@
  *http://www.anji-plus.com
  *All rights reserved.
  */
-package com.anji.captcha.service.impl;
+package io.at.exchange.captcha.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
-import com.anji.captcha.model.common.RepCodeEnum;
-import com.anji.captcha.model.common.ResponseModel;
-import com.anji.captcha.model.vo.CaptchaVO;
-import com.anji.captcha.util.ImageUtils;
-import com.anji.captcha.util.RandomUtils;
-
-import com.anji.captcha.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import io.at.exchange.captcha.model.common.RepCodeEnum;
+import io.at.exchange.captcha.model.common.ResponseModel;
+import io.at.exchange.captcha.model.vo.CaptchaVO;
+import io.at.exchange.captcha.util.ImageUtils;
+import io.at.exchange.captcha.util.RandomUtils;
+import io.at.exchange.captcha.util.StringUtils;
+import com.dd.tools.TProperties;
+import com.dd.tools.log.Logger;
+import io.at.base.utils.TypeUtil;
 
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 点选文字验证码
  *
- * Created by raodeming on 2019/12/25.
+ *
+ * @author raodeming
+ * @date 2019/12/25
  */
-@Component(value = "clickWordCaptchaService")
 public class ClickWordCaptchaServiceImpl extends AbstractCaptchaservice {
 
-    private static Logger logger = LoggerFactory.getLogger(ClickWordCaptchaServiceImpl.class);
-
-    @Value("${captcha.water.mark:'我的水印'}")
     private String waterMark;
 
-    @Value("${captcha.water.font:'宋体'}")
     private String waterMarkFont;
 
-    @Value("${captcha.font.type:'宋体'}")
     private String fontType;
+
+    public ClickWordCaptchaServiceImpl() {
+        super();
+        this.waterMark = TypeUtil.s(TProperties.getString("config", "captcha.water.mark"), "www.zbg.com");
+        this.waterMarkFont = TypeUtil.s(TProperties.getString("config", "captcha.water.font"), "宋体");
+        this.fontType = TypeUtil.s(TProperties.getString("config", "captcha.font.type"), "宋体");
+    }
 
     @Override
     public ResponseModel get(CaptchaVO captchaVO) {
@@ -69,7 +72,7 @@ public class ClickWordCaptchaServiceImpl extends AbstractCaptchaservice {
         List<Point> point = null;
         List<Point> point1 = null;
         String pointJson = null;
-        /**
+        /*
          * [
          *             {
          *                 "x": 85.0,
@@ -91,7 +94,7 @@ public class ClickWordCaptchaServiceImpl extends AbstractCaptchaservice {
             pointJson = decrypt(captchaVO.getPointJson());
             point1 = JSONObject.parseArray(pointJson, Point.class);
         } catch (Exception e) {
-            logger.error("验证码坐标解析失败", e);
+            Logger.error("验证码坐标解析失败", e);
             return ResponseModel.errorMsg(e.getMessage());
         }
         for (int i = 0; i < point.size(); i++) {
@@ -117,8 +120,8 @@ public class ClickWordCaptchaServiceImpl extends AbstractCaptchaservice {
 
     private CaptchaVO getImageData(BufferedImage backgroundImage) {
         CaptchaVO dataVO = new CaptchaVO();
-        List<String> wordList = new ArrayList<String>();
-        List<Point> pointList = new ArrayList();
+        List<String> wordList = new ArrayList<>();
+        List<Point> pointList = new ArrayList<>();
 
         Graphics backgroundGraphics = backgroundImage.getGraphics();
         int width = backgroundImage.getWidth();
@@ -128,7 +131,7 @@ public class ClickWordCaptchaServiceImpl extends AbstractCaptchaservice {
         int wordCount = getWordTotalCount();
         //定义随机1到arr.length某一个字不参与校验
         int num = RandomUtils.getRandomInt(1, wordCount);
-        Set<String> currentWords = new HashSet<String>();
+        Set<String> currentWords = new HashSet<>();
         for (int i = 0; i < wordCount; i++) {
             String word;
             do {

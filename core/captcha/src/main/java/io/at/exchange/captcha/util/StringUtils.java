@@ -4,7 +4,7 @@
  *http://www.anji-plus.com
  *All rights reserved.
  */
-package com.anji.captcha.util;
+package io.at.exchange.captcha.util;
 
 public class StringUtils {
 

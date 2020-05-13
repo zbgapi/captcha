@@ -4,20 +4,18 @@
  *http://www.anji-plus.com
  *All rights reserved.
  */
-package com.anji.captcha.service.impl;
+package io.at.exchange.captcha.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
-
-import com.anji.captcha.model.common.RepCodeEnum;
-import com.anji.captcha.model.common.ResponseModel;
-import com.anji.captcha.model.vo.CaptchaVO;
-import com.anji.captcha.util.ImageUtils;
-import com.anji.captcha.util.RandomUtils;
-import com.anji.captcha.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import io.at.exchange.captcha.model.common.RepCodeEnum;
+import io.at.exchange.captcha.model.common.ResponseModel;
+import io.at.exchange.captcha.model.vo.CaptchaVO;
+import io.at.exchange.captcha.util.ImageUtils;
+import io.at.exchange.captcha.util.RandomUtils;
+import io.at.exchange.captcha.util.StringUtils;
+import com.dd.tools.TProperties;
+import com.dd.tools.log.Logger;
+import io.at.base.utils.TypeUtil;
 import sun.misc.BASE64Encoder;
 
 import javax.imageio.ImageIO;
@@ -29,21 +27,24 @@ import java.util.Random;
 /**
  * 滑动验证码
  *
- * Created by raodeming on 2019/12/25.
+ *
+ * @author raodeming
+ * @date 2019/12/25
  */
-@Component(value = "blockPuzzleCaptchaService")
 public class BlockPuzzleCaptchaServiceImpl extends AbstractCaptchaservice {
 
-    private static Logger logger = LoggerFactory.getLogger(BlockPuzzleCaptchaServiceImpl.class);
-
-    @Value("${captcha.water.mark:'我的水印'}")
     private String waterMark;
 
-    @Value("${captcha.water.font:'宋体'}")
     private String waterMarkFont;
 
-    @Value("${captcha.slip.offset:5}")
     private String slipOffset;
+
+    public BlockPuzzleCaptchaServiceImpl() {
+        super();
+        this.waterMark = TypeUtil.s(TProperties.getString("config", "captcha.water.mark"), "www.zbg.com");
+        this.waterMarkFont = TypeUtil.s(TProperties.getString("config", "captcha.water.font"), "宋体");
+        this.slipOffset = TypeUtil.s(TProperties.getString("config", "captcha.slip.offset"), "5");
+    }
 
     @Override
     public ResponseModel get(CaptchaVO captchaVO) {
@@ -62,7 +63,7 @@ public class BlockPuzzleCaptchaServiceImpl extends AbstractCaptchaservice {
 
         //抠图图片
 //        BufferedImage   jigsawImage = getBufferedImage(ImageUtils.getBlockPuzzleJigsawPath(captchaVO.getCaptchaOriginalPath()));
-        BufferedImage jigsawImage = ImageUtils.getslidingBlock();
+        BufferedImage jigsawImage = ImageUtils.getSlidingBlock();
         CaptchaVO captcha = pictureTemplatesCut(originalImage, jigsawImage);
         if (captcha == null
                 || StringUtils.isBlank(captcha.getJigsawImageBase64())
@@ -91,7 +92,7 @@ public class BlockPuzzleCaptchaServiceImpl extends AbstractCaptchaservice {
             pointJson = decrypt(captchaVO.getPointJson());
             point1 = JSONObject.parseObject(pointJson, Point.class);
         } catch (Exception e) {
-            logger.error("验证码坐标解析失败", e);
+            Logger.error("验证码坐标解析失败", e);
             return ResponseModel.errorMsg(e.getMessage());
         }
         if (point.x-Integer.parseInt(slipOffset) > point1.x
@@ -152,7 +153,7 @@ public class BlockPuzzleCaptchaServiceImpl extends AbstractCaptchaservice {
             byte[] jigsawImages = os.toByteArray();
 
             // 源图生成遮罩
-            byte[] oriCopyImages = DealOriPictureByTemplate(originalImage, jigsawImage, x, 0);
+            byte[] oriCopyImages = dealOriPictureByTemplate(originalImage, jigsawImage, x, 0);
             BASE64Encoder encoder = new BASE64Encoder();
             dataVO.setOriginalImageBase64(encoder.encode(oriCopyImages).replaceAll("\r|\n", ""));
             //point信息不传到前端，只做后端check校验
@@ -184,7 +185,7 @@ public class BlockPuzzleCaptchaServiceImpl extends AbstractCaptchaservice {
      * @return
      * @throws Exception
      */
-    private static byte[] DealOriPictureByTemplate(BufferedImage oriImage, BufferedImage templateImage, int x,
+    private static byte[] dealOriPictureByTemplate(BufferedImage oriImage, BufferedImage templateImage, int x,
                                                    int y) throws Exception {
         // 源文件备份图像矩阵 支持alpha通道的rgb图像
         BufferedImage ori_copy_image = new BufferedImage(oriImage.getWidth(), oriImage.getHeight(), BufferedImage.TYPE_4BYTE_ABGR);

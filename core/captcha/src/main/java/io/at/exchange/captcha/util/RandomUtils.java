@@ -4,7 +4,7 @@
  *http://www.anji-plus.com
  *All rights reserved.
  */
-package com.anji.captcha.util;
+package io.at.exchange.captcha.util;
 
 import java.util.Random;
 import java.util.UUID;
@@ -29,18 +29,18 @@ public class RandomUtils {
      * @return
      */
     public static String getRandomHan(String hanZi) {
-        String ch = hanZi.charAt(new Random().nextInt(hanZi.length())) + "";
-        return ch;
+        return hanZi.charAt(new Random().nextInt(hanZi.length())) + "";
     }
 
     /**
      * 随机范围内数字
+     *
      * @param startNum
      * @param endNum
      * @return
      */
     public static Integer getRandomInt(int startNum, int endNum) {
-        return new Random().nextInt(endNum-startNum) + startNum;
+        return new Random().nextInt(endNum - startNum) + startNum;
     }
 
     public static void main(String[] args) {

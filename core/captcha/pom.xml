@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.github.anji-plus</groupId>
+    <groupId>io.at</groupId>
     <artifactId>captcha</artifactId>
     <version>1.1.7</version>
 
@@ -17,38 +17,22 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
-        <spring.version>5.0.8.RELEASE</spring.version>
+        <exchange.webbase.version>0.0.1-20181206062513-RELEASE</exchange.webbase.version>
     </properties>
 
     <!-- Add typical dependencies for a web application -->
     <dependencies>
-
         <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-beans</artifactId>
-            <version>${spring.version}</version>
+            <groupId>io.at</groupId>
+            <artifactId>webbase</artifactId>
+            <version>${exchange.webbase.version}</version>
             <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-context</artifactId>
-            <version>${spring.version}</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-web</artifactId>
-            <version>${spring.version}</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.25</version>
-            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.at</groupId>
+                    <artifactId>secure_network</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -57,7 +41,6 @@
             <version>1.2.31</version>
             <scope>provided</scope>
         </dependency>
-
     </dependencies>
 
     <!--中央仓库上传配置开始-->
@@ -138,32 +121,20 @@
                             <additionalparam>-Xdoclint:none</additionalparam>
                         </configuration>
                     </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.5</version>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
                 </plugins>
             </build>
             <!-- 【注】snapshotRepository 与 repository 中的 id 一定要与 setting.xml 中 server 的 id 保持一致！ -->
             <distributionManagement>
-                <snapshotRepository>
-                    <id>releases</id>
-                    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-                </snapshotRepository>
                 <repository>
-                    <id>releases</id>
-                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+                    <id>nexus-release</id>
+                    <name>Internal Release Repository</name>
+                    <url>http://172.16.100.101:8089/nexus/content/repositories/releases/</url>
                 </repository>
+                <snapshotRepository>
+                    <id>nexus-snapshots</id>
+                    <name>Internal Snapshot Repository</name>
+                    <url>http://172.16.100.101:8089/nexus/content/repositories/snapshots/</url>
+                </snapshotRepository>
             </distributionManagement>
         </profile>
     </profiles>

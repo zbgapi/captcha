@@ -4,14 +4,14 @@
  *http://www.anji-plus.com
  *All rights reserved.
  */
-package com.anji.captcha.util;
+package io.at.exchange.captcha.util;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class CacheUtil {
 
-    private static final Map<String, Object> CACHE_MAP = new ConcurrentHashMap<String, Object>();
+    private static final Map<String, Object> CACHE_MAP = new ConcurrentHashMap<>();
 
     public static void set(String key, String value){
 

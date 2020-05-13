@@ -4,10 +4,10 @@
  *http://www.anji-plus.com
  *All rights reserved.
  */
-package com.anji.captcha.model.common;
+package io.at.exchange.captcha.model.common;
 
 import com.alibaba.fastjson.JSONObject;
-import com.anji.captcha.util.StringUtils;
+import io.at.exchange.captcha.util.StringUtils;
 
 import java.io.Serializable;
 import java.util.List;
