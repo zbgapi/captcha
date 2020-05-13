@@ -4,92 +4,70 @@
  *http://www.anji-plus.com
  *All rights reserved.
  */
-package com.anji.captcha.service.impl;
+package io.at.exchange.captcha.service.impl;
 
 
-import com.anji.captcha.model.common.RepCodeEnum;
-import com.anji.captcha.model.common.ResponseModel;
-import com.anji.captcha.model.vo.CaptchaVO;
-import com.anji.captcha.service.CaptchaCacheService;
-import com.anji.captcha.service.CaptchaService;
-import com.anji.captcha.util.AESUtil;
-import com.anji.captcha.config.Container;
-import com.anji.captcha.util.ImageUtils;
-import com.anji.captcha.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Primary;
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
-import org.springframework.stereotype.Component;
+import io.at.exchange.captcha.model.common.RepCodeEnum;
+import io.at.exchange.captcha.model.common.ResponseModel;
+import io.at.exchange.captcha.model.vo.CaptchaVO;
+import io.at.exchange.captcha.service.CaptchaCacheService;
+import io.at.exchange.captcha.service.CaptchaService;
+import io.at.exchange.captcha.util.AESUtil;
+import io.at.exchange.captcha.util.ImageUtils;
+import io.at.exchange.captcha.util.StringUtils;
+import com.dd.tools.TProperties;
+import com.dd.tools.log.Logger;
+import io.at.base.config.SignCacheConfig;
 
-import javax.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Created by raodeming on 2019/12/25.
+ *
+ * @author raodeming
+ * @date 2019/12/25
  */
-@Component(value = "defaultCaptchaServiceImpl")
-@Primary
-@Order(Ordered.LOWEST_PRECEDENCE)
 public class DefaultCaptchaServiceImpl implements CaptchaService {
-
-    private static Logger logger = LoggerFactory.getLogger(DefaultCaptchaServiceImpl.class);
-
-    @Value("${captcha.captchaOriginalPath.jigsaw:}")
+    /**
+     * 滑动验证码原生图片路径
+     */
     private String captchaOriginalPathJigsaw;
-
-    @Value("${captcha.captchaOriginalPath.pic-click:}")
+    /**
+     * 选文字验证码原生图片路径
+     */
     private String captchaOriginalPathClick;
-
+    /**
+     * 缓存Key
+     */
     protected static String REDIS_SECOND_CAPTCHA_KEY = "RUNNING:CAPTCHA:second-%s";
 
     protected CaptchaCacheService captchaCacheService;
 
-    private Map<String,CaptchaService> instances = new HashMap();
-    @PostConstruct
-    public void init(){
+    private Map<String, CaptchaService> instances = new HashMap<>();
+
+    public DefaultCaptchaServiceImpl() {
         initCache();
 
-        Object t = this;
-        Container.getBeanOfType(CaptchaService.class).entrySet().stream().forEach(item->{
-            if(!t.equals(item.getValue())) {
-                instances.put(item.getKey(), item.getValue());
-            }
-        });
-        System.out.println("supported-captchaTypes-service:"+instances.keySet().toString());
+        instances.put("blockPuzzleCaptchaService", new BlockPuzzleCaptchaServiceImpl());
+        instances.put("clickWordCaptchaService", new ClickWordCaptchaServiceImpl());
+        Logger.debug("supported-captchaTypes-service:" + instances.keySet().toString());
+
         //初始化底图
+        this.captchaOriginalPathJigsaw = TProperties.getString("config", "captcha.captcha-original-path.jigsaw");
+        this.captchaOriginalPathClick = TProperties.getString("config", "captcha.captcha-original-path.pic-click");
         ImageUtils.cacheImage(captchaOriginalPathJigsaw, captchaOriginalPathClick);
-        logger.info("--->>>初始化验证码底图<<<---");
+        Logger.info("--->>>初始化验证码底图<<<---");
     }
 
-    public void initCache(){
-        Map<String, CaptchaCacheService> map = Container.getBeanOfType(CaptchaCacheService.class);
-        if(map == null || map.isEmpty()){
-            captchaCacheService = Container.getBean("captchaCacheServiceMemImpl", CaptchaCacheService.class);
-            return;
-        }
-        if(map.size()==1){
-            captchaCacheService = Container.getBean("captchaCacheServiceMemImpl", CaptchaCacheService.class);
-            return;
-        }
-        if(map.size()>=2){
-            map.entrySet().stream().forEach(item ->{
-                if(captchaCacheService != null){
-                    return;
-                }
-                if(!"captchaCacheServiceMemImpl".equals(item.getKey())){
-                    captchaCacheService = item.getValue();
-                    return;
-                }
-            });
+    public void initCache() {
+        if (SignCacheConfig.isRedis()) {
+            this.captchaCacheService = new CaptchaCacheServiceRedisImpl();
+        } else {
+            this.captchaCacheService = new CaptchaCacheServiceMemImpl();
         }
     }
 
-    private CaptchaService getService(String captchaType){
+    private CaptchaService getService(String captchaType) {
         return instances.get(captchaType.concat("CaptchaService"));
     }
 
@@ -101,7 +79,7 @@ public class DefaultCaptchaServiceImpl implements CaptchaService {
         if (StringUtils.isEmpty(captchaVO.getCaptchaType())) {
             return RepCodeEnum.NULL_ERROR.parseError("类型");
         }
-        if (captchaVO.getCaptchaType().equals("blockPuzzle")) {
+        if ("blockPuzzle".equals(captchaVO.getCaptchaType())) {
             captchaVO.setCaptchaOriginalPath(captchaOriginalPathJigsaw);
         } else {
             captchaVO.setCaptchaOriginalPath(captchaOriginalPathClick);
@@ -148,7 +126,7 @@ public class DefaultCaptchaServiceImpl implements CaptchaService {
                 return ResponseModel.errorMsg(RepCodeEnum.API_CAPTCHA_COORDINATE_ERROR);
             }
         } catch (Exception e) {
-            logger.error("验证码坐标解析失败", e);
+            Logger.error("验证码坐标解析失败", e);
             return ResponseModel.errorMsg(e.getMessage());
         }
         return ResponseModel.success();
