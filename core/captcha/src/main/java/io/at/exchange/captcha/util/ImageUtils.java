@@ -8,8 +8,6 @@ package io.at.exchange.captcha.util;
 
 import com.dd.tools.TFile;
 import com.dd.tools.log.Logger;
-import sun.misc.BASE64Decoder;
-import sun.misc.BASE64Encoder;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -80,8 +78,7 @@ public class ImageUtils {
             e.printStackTrace();
         }
         byte[] bytes = baos.toByteArray();
-        BASE64Encoder encoder = new BASE64Encoder();
-        return encoder.encodeBuffer(bytes).trim();
+        return AESUtil.base64Encode(bytes);
     }
 
     /**
@@ -92,8 +89,7 @@ public class ImageUtils {
      */
     public static BufferedImage getBase64StrToImage(String base64String) {
         try {
-            BASE64Decoder base64Decoder = new BASE64Decoder();
-            byte[] bytes = base64Decoder.decodeBuffer(base64String);
+            byte[] bytes = AESUtil.base64Decode(base64String);
             ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
             return ImageIO.read(inputStream);
         } catch (IOException e) {

@@ -6,13 +6,11 @@
  */
 package io.at.exchange.captcha.service.impl;
 
+import io.at.base.config.SignCacheConfig;
 import io.at.exchange.captcha.service.CaptchaCacheService;
 import io.at.exchange.captcha.service.CaptchaService;
 import io.at.exchange.captcha.util.AESUtil;
 import io.at.exchange.captcha.util.StringUtils;
-import io.at.base.config.SignCacheConfig;
-import sun.misc.BASE64Decoder;
-import sun.misc.BASE64Encoder;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -101,8 +99,7 @@ public abstract class AbstractCaptchaservice implements CaptchaService {
             e.printStackTrace();
         }
         byte[] bytes = baos.toByteArray();
-        BASE64Encoder encoder = new BASE64Encoder();
-        return encoder.encodeBuffer(bytes).trim();
+        return AESUtil.base64Encode(bytes);
     }
 
 
@@ -147,10 +144,10 @@ public abstract class AbstractCaptchaservice implements CaptchaService {
         if (imgStr == null) {
             return false;
         }
-        BASE64Decoder decoder = new BASE64Decoder();
+
         try {
             // 解密
-            byte[] b = decoder.decodeBuffer(imgStr);
+            byte[] b = AESUtil.base64Decode(imgStr);
             // 处理数据
             for (int i = 0; i < b.length; ++i) {
                 if (b[i] < 0) {

@@ -7,16 +7,16 @@
 package io.at.exchange.captcha.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
-import io.at.exchange.captcha.model.common.RepCodeEnum;
-import io.at.exchange.captcha.model.common.ResponseModel;
-import io.at.exchange.captcha.model.vo.CaptchaVO;
-import io.at.exchange.captcha.util.ImageUtils;
-import io.at.exchange.captcha.util.RandomUtils;
-import io.at.exchange.captcha.util.StringUtils;
 import com.dd.tools.TProperties;
 import com.dd.tools.log.Logger;
 import io.at.base.utils.TypeUtil;
-import sun.misc.BASE64Encoder;
+import io.at.exchange.captcha.model.common.RepCodeEnum;
+import io.at.exchange.captcha.model.common.ResponseModel;
+import io.at.exchange.captcha.model.vo.CaptchaVO;
+import io.at.exchange.captcha.util.AESUtil;
+import io.at.exchange.captcha.util.ImageUtils;
+import io.at.exchange.captcha.util.RandomUtils;
+import io.at.exchange.captcha.util.StringUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -140,7 +140,7 @@ public class BlockPuzzleCaptchaServiceImpl extends AbstractCaptchaservice {
             BufferedImage subImage = originalImage.getSubimage(x, 0, jigsawWidth, jigsawHeight);
 
             // 获取拼图区域
-            newJigsawImage = DealCutPictureByTemplate(subImage, jigsawImage, newJigsawImage);
+            newJigsawImage = dealCutPictureByTemplate(subImage, jigsawImage, newJigsawImage);
 
             // 设置“抗锯齿”的属性
             graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -154,15 +154,10 @@ public class BlockPuzzleCaptchaServiceImpl extends AbstractCaptchaservice {
 
             // 源图生成遮罩
             byte[] oriCopyImages = dealOriPictureByTemplate(originalImage, jigsawImage, x, 0);
-            BASE64Encoder encoder = new BASE64Encoder();
-            dataVO.setOriginalImageBase64(encoder.encode(oriCopyImages).replaceAll("\r|\n", ""));
-            //point信息不传到前端，只做后端check校验
-//            dataVO.setPoint(point);
-            dataVO.setJigsawImageBase64(encoder.encode(jigsawImages).replaceAll("\r|\n", ""));
+            dataVO.setOriginalImageBase64(AESUtil.base64Encode(oriCopyImages).replaceAll("\r|\n", ""));
+            dataVO.setJigsawImageBase64(AESUtil.base64Encode(jigsawImages).replaceAll("\r|\n", ""));
             dataVO.setToken(RandomUtils.getUUID());
-//            BASE64Decoder decoder = new BASE64Decoder();
-//            base64StrToImage(encoder.encode(oriCopyImages), "D:\\原图.png");
-//            base64StrToImage(encoder.encode(jigsawImages), "D:\\滑动.png");
+
 
             //将坐标信息存入redis中
             String codeKey = String.format(REDIS_CAPTCHA_KEY, dataVO.getToken());
@@ -185,10 +180,9 @@ public class BlockPuzzleCaptchaServiceImpl extends AbstractCaptchaservice {
      * @return
      * @throws Exception
      */
-    private static byte[] dealOriPictureByTemplate(BufferedImage oriImage, BufferedImage templateImage, int x,
-                                                   int y) throws Exception {
+    private static byte[] dealOriPictureByTemplate(BufferedImage oriImage, BufferedImage templateImage, int x, int y) throws Exception {
         // 源文件备份图像矩阵 支持alpha通道的rgb图像
-        BufferedImage ori_copy_image = new BufferedImage(oriImage.getWidth(), oriImage.getHeight(), BufferedImage.TYPE_4BYTE_ABGR);
+        BufferedImage oriCopyImage = new BufferedImage(oriImage.getWidth(), oriImage.getHeight(), BufferedImage.TYPE_4BYTE_ABGR);
         // 源文件图像矩阵
         int[][] oriImageData = getData(oriImage);
         // 模板图像矩阵
@@ -203,7 +197,7 @@ public class BlockPuzzleCaptchaServiceImpl extends AbstractCaptchaservice {
                 int b = (0xff & (rgb >> 16));
                 //无透明处理
                 rgb = r + (g << 8) + (b << 16) + (255 << 24);
-                ori_copy_image.setRGB(i, j, rgb);
+                oriCopyImage.setRGB(i, j, rgb);
             }
         }
 
@@ -212,20 +206,17 @@ public class BlockPuzzleCaptchaServiceImpl extends AbstractCaptchaservice {
                 int rgb = templateImage.getRGB(i, j);
                 //对源文件备份图像(x+i,y+j)坐标点进行透明处理
                 if (rgb != 16777215 && rgb <= 0) {
-                    int rgb_ori = ori_copy_image.getRGB(x + i, y + j);
-                    int r = (0xff & rgb_ori);
-                    int g = (0xff & (rgb_ori >> 8));
-                    int b = (0xff & (rgb_ori >> 16));
-                    rgb_ori = r + (g << 8) + (b << 16) + (50 << 24);
-                    ori_copy_image.setRGB(x + i, y + j, rgb_ori);
-//                    ori_copy_image.setRGB(x + i, y + j, new Color(0,0,0,150).getRGB());
-                } else {
-                    //do nothing
+                    int rgbOri = oriCopyImage.getRGB(x + i, y + j);
+                    int r = (0xff & rgbOri);
+                    int g = (0xff & (rgbOri >> 8));
+                    int b = (0xff & (rgbOri >> 16));
+                    rgbOri = r + (g << 8) + (b << 16) + (50 << 24);
+                    oriCopyImage.setRGB(x + i, y + j, rgbOri);
                 }
             }
         }
         ByteArrayOutputStream os = new ByteArrayOutputStream();//新建流。
-        ImageIO.write(ori_copy_image, "png", os);//利用ImageIO类提供的write方法，将bi以png图片的数据模式写入流。
+        ImageIO.write(oriCopyImage, "png", os);//利用ImageIO类提供的write方法，将bi以png图片的数据模式写入流。
         byte b[] = os.toByteArray();//从流中获取数据数组。
         return b;
     }
@@ -239,8 +230,7 @@ public class BlockPuzzleCaptchaServiceImpl extends AbstractCaptchaservice {
      * @return
      * @throws Exception
      */
-    private static BufferedImage DealCutPictureByTemplate(BufferedImage oriImage, BufferedImage templateImage,
-                                                          BufferedImage targetImage) throws Exception {
+    private static BufferedImage dealCutPictureByTemplate(BufferedImage oriImage, BufferedImage templateImage, BufferedImage targetImage) {
         // 源文件图像矩阵
         int[][] oriImageData = getData(oriImage);
         // 模板图像矩阵
@@ -254,7 +244,7 @@ public class BlockPuzzleCaptchaServiceImpl extends AbstractCaptchaservice {
                 int rgb = templateImageData[i][j];
                 if (rgb != 16777215 && rgb <= 0) {
                     targetImage.setRGB(i, j, oriImageData[i][j]);
-                    int rgb_ori = targetImage.getRGB(i, j);
+                    int rgbBri = targetImage.getRGB(i, j);
                     if (j > 3 && j < templateImageData[0].length - 3) {
                         int rgbBefore = templateImageData[i][j-1];
                         int rgbAfter = templateImageData[i][j+1];

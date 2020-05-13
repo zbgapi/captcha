@@ -7,24 +7,18 @@
 package io.at.exchange.captcha.util;
 
 
-//import org.apache.commons.codec.binary.Base64;
-
-import com.dd.http.server.module.annontationRouter.annotation.Router;
-import com.dd.tools.TEnv;
-import sun.misc.BASE64Decoder;
-
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.spec.SecretKeySpec;
 import java.math.BigInteger;
 import java.util.Base64;
-import java.util.List;
 
 
 public class AESUtil {
     //密钥 (需要前端和后端保持一致)
     private static final String KEY = "BGxdEUOZkXka4HSj";
     //算法
+
     private static final String ALGORITHMSTR = "AES/ECB/PKCS5Padding";
 
     /**
@@ -77,7 +71,6 @@ public class AESUtil {
      * @return 编码后的base 64 code
      */
     public static String base64Encode(byte[] bytes) {
-        //return Base64.encodeBase64String(bytes);
         return Base64.getEncoder().encodeToString(bytes);
     }
 
@@ -86,12 +79,10 @@ public class AESUtil {
      *
      * @param base64Code 待解码的base 64 code
      * @return 解码后的byte[]
-     * @throws Exception
      */
-    public static byte[] base64Decode(String base64Code) throws Exception {
-        return StringUtils.isEmpty(base64Code) ? null : new BASE64Decoder().decodeBuffer(base64Code);
+    public static byte[] base64Decode(String base64Code) {
+        return StringUtils.isEmpty(base64Code) ? null : Base64.getDecoder().decode(base64Code);
     }
-
 
     /**
      * AES加密
@@ -161,7 +152,7 @@ public class AESUtil {
      * 测试
      */
     public static void main(String[] args) throws Exception {
-        String content = "ASDFASDF";
+        String content = "{\"x\":201.0,\"y\":5.0}\n";
         System.out.println("加密前：" + content);
         System.out.println("加密密钥和解密密钥：" + KEY);
         String encrypt = aesEncrypt(content, KEY);
@@ -169,8 +160,9 @@ public class AESUtil {
         String decrypt = aesDecrypt(encrypt, KEY);
         System.out.println("解密后：" + decrypt);
 
-        List<Class> classList = TEnv.searchClassInEnv("io.at.exchange", new Class[]{Router.class});
-        System.out.println(classList);
-    }
+        //5X8bRZUr5ZFn3dlJWs248A==
+        //w9j35StKsS+Lrw79elfBVSZfyxgaH1TvQib/5wfZno8=
+        //w9j35StKsS+Lrw79elfBVQS0sbUI0qVKHIxyvD0Nv6k=
+       }
 
 }
