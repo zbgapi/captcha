@@ -7,6 +7,7 @@
 package io.at.exchange.captcha.service.impl;
 
 
+import io.at.base.utils.TypeUtil;
 import io.at.exchange.captcha.model.common.RepCodeEnum;
 import io.at.exchange.captcha.model.common.ResponseModel;
 import io.at.exchange.captcha.model.vo.CaptchaVO;
@@ -37,6 +38,10 @@ public class DefaultCaptchaServiceImpl implements CaptchaService {
      */
     private String captchaOriginalPathClick;
     /**
+     * aes.key(16位，和前端加密保持一致)
+     */
+    private String aseKey;
+    /**
      * 缓存Key
      */
     protected static String REDIS_SECOND_CAPTCHA_KEY = "RUNNING:CAPTCHA:second-%s";
@@ -46,6 +51,7 @@ public class DefaultCaptchaServiceImpl implements CaptchaService {
     private Map<String, CaptchaService> instances = new HashMap<>();
 
     public DefaultCaptchaServiceImpl() {
+        this.aseKey = TypeUtil.s(TProperties.getString("config", "captcha.aes.key"), "BGxdEUOZkXka4HSj");
         initCache();
 
         instances.put("blockPuzzleCaptchaService", new BlockPuzzleCaptchaServiceImpl());
@@ -111,7 +117,7 @@ public class DefaultCaptchaServiceImpl implements CaptchaService {
         }
         try {
             //aes解密
-            String s = AESUtil.aesDecrypt(captchaVO.getCaptchaVerification(), null);
+            String s = AESUtil.aesDecrypt(captchaVO.getCaptchaVerification(), aseKey);
             String token = s.split("---")[0];
             String pointJson = s.split("---")[1];
             //取坐标信息

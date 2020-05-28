@@ -15,18 +15,20 @@ import java.util.Base64;
 
 
 public class AESUtil {
-    //密钥 (需要前端和后端保持一致)
+    /**
+     * 密钥 (需要前端和后端保持一致)
+     */
     private static final String KEY = "BGxdEUOZkXka4HSj";
-    //算法
-
+    /**
+     * 算法
+     */
     private static final String ALGORITHMSTR = "AES/ECB/PKCS5Padding";
 
     /**
      * aes解密
      *
      * @param encrypt 内容
-     * @return
-     * @throws Exception
+     * @return 解密后的字符串，解密失败返回空
      */
     public static String aesDecrypt(String encrypt) {
         try {
@@ -40,9 +42,8 @@ public class AESUtil {
     /**
      * aes加密
      *
-     * @param content
-     * @return
-     * @throws Exception
+     * @param content 待加密字符串
+     * @return 加密后的base64字符串 加密失败返回空
      */
     public static String aesEncrypt(String content) {
         try {
@@ -90,7 +91,7 @@ public class AESUtil {
      * @param content    待加密的内容
      * @param encryptKey 加密密钥
      * @return 加密后的byte[]
-     * @throws Exception
+     * @throws Exception 加密失败
      */
     public static byte[] aesEncryptToBytes(String content, String encryptKey) throws Exception {
         KeyGenerator kgen = KeyGenerator.getInstance("AES");
@@ -108,7 +109,7 @@ public class AESUtil {
      * @param content    待加密的内容
      * @param encryptKey 加密密钥
      * @return 加密后的base 64 code
-     * @throws Exception
+     * @throws Exception 加密失败
      */
     public static String aesEncrypt(String content, String encryptKey) throws Exception {
         return base64Encode(aesEncryptToBytes(content, encryptKey));
@@ -120,7 +121,7 @@ public class AESUtil {
      * @param encryptBytes 待解密的byte[]
      * @param decryptKey   解密密钥
      * @return 解密后的String
-     * @throws Exception
+     * @throws Exception 解密失败
      */
     public static String aesDecryptByBytes(byte[] encryptBytes, String decryptKey) throws Exception {
         KeyGenerator kgen = KeyGenerator.getInstance("AES");
@@ -139,7 +140,7 @@ public class AESUtil {
      * @param encryptStr 待解密的base 64 code
      * @param decryptKey 解密密钥
      * @return 解密后的string
-     * @throws Exception
+     * @throws Exception 解密失败
      */
     public static String aesDecrypt(String encryptStr, String decryptKey) throws Exception {
         if (StringUtils.isEmpty(decryptKey)) {
@@ -147,22 +148,4 @@ public class AESUtil {
         }
         return StringUtils.isEmpty(encryptStr) ? null : aesDecryptByBytes(base64Decode(encryptStr), decryptKey);
     }
-
-    /**
-     * 测试
-     */
-    public static void main(String[] args) throws Exception {
-        String content = "{\"x\":201.0,\"y\":5.0}\n";
-        System.out.println("加密前：" + content);
-        System.out.println("加密密钥和解密密钥：" + KEY);
-        String encrypt = aesEncrypt(content, KEY);
-        System.out.println("加密后：" + encrypt);
-        String decrypt = aesDecrypt(encrypt, KEY);
-        System.out.println("解密后：" + decrypt);
-
-        //5X8bRZUr5ZFn3dlJWs248A==
-        //w9j35StKsS+Lrw79elfBVSZfyxgaH1TvQib/5wfZno8=
-        //w9j35StKsS+Lrw79elfBVQS0sbUI0qVKHIxyvD0Nv6k=
-       }
-
 }

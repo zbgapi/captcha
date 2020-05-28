@@ -7,18 +7,19 @@
 package io.at.exchange.captcha.service;
 
 /**
- * @Title: 验证码缓存接口
+ * 验证码缓存接口
+ *
  * @author lide1202@hotmail.com
  * @date 2018-08-21
  */
 public interface CaptchaCacheService {
 
-	void set(String key, String value, long expiresInSeconds);
+    void set(String key, String value, long expiresInSeconds);
 
-	boolean exists(String key);
+    boolean exists(String key);
 
-	void delete(String key);
+    void delete(String key);
 
-	String get(String key);
+    String get(String key);
 
 }

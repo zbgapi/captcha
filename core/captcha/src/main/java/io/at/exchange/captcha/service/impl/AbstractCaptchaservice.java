@@ -6,7 +6,9 @@
  */
 package io.at.exchange.captcha.service.impl;
 
+import com.dd.tools.TProperties;
 import io.at.base.config.SignCacheConfig;
+import io.at.base.utils.TypeUtil;
 import io.at.exchange.captcha.service.CaptchaCacheService;
 import io.at.exchange.captcha.service.CaptchaService;
 import io.at.exchange.captcha.util.AESUtil;
@@ -18,7 +20,6 @@ import java.io.*;
 import java.net.URL;
 
 /**
- *
  * @author raodeming
  * @date 2019/12/25
  */
@@ -91,7 +92,7 @@ public abstract class AbstractCaptchaservice implements CaptchaService {
      * @param templateImage
      * @return
      */
-    protected String getImageToBase64Str(BufferedImage templateImage) {
+    public static String getImageToBase64Str(BufferedImage templateImage) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
             ImageIO.write(templateImage, "png", baos);
@@ -176,9 +177,15 @@ public abstract class AbstractCaptchaservice implements CaptchaService {
      * @return
      * @throws Exception
      */
-    public static String decrypt(String point) throws Exception {
-        return AESUtil.aesDecrypt(point, null);
+    public static String decrypt(String point, String aesKey) throws Exception {
+        return AESUtil.aesDecrypt(point, aesKey);
     }
 
-
+    public static String getConfig(String key, String defaultValue) {
+        try {
+            return TypeUtil.s(TProperties.getString("config", key), defaultValue);
+        } catch (Exception e) {
+            return defaultValue;
+        }
+    }
 }

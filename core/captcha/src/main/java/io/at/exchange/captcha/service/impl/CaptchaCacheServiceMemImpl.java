@@ -1,7 +1,7 @@
 package io.at.exchange.captcha.service.impl;
 
+import com.dd.tools.cache.CachedHashMap;
 import io.at.exchange.captcha.service.CaptchaCacheService;
-import io.at.exchange.captcha.util.CacheUtil;
 
 /**
  * 对于分布式部署的应用，我们建议应用自己实现CaptchaCacheService，比如用Redis，参考service/spring-boot代码示例。
@@ -13,23 +13,25 @@ import io.at.exchange.captcha.util.CacheUtil;
  */
 
 public class CaptchaCacheServiceMemImpl implements CaptchaCacheService {
+    private static final CachedHashMap<String, String> CACHE_MAP = new CachedHashMap<String, String>().autoRemove(true).interval(5).create();
+
     @Override
     public void set(String key, String value, long expiresInSeconds) {
-        CacheUtil.set(key, value, expiresInSeconds);
+        CACHE_MAP.put(key, value, expiresInSeconds);
     }
 
     @Override
     public boolean exists(String key) {
-        return CacheUtil.exists(key);
+        return CACHE_MAP.containsKey(key);
     }
 
     @Override
     public void delete(String key) {
-        CacheUtil.delete(key);
+        CACHE_MAP.remove(key);
     }
 
     @Override
     public String get(String key) {
-        return CacheUtil.get(key);
+        return CACHE_MAP.get(key);
     }
 }

@@ -28,32 +28,40 @@ import java.util.Set;
 /**
  * 点选文字验证码
  *
- *
  * @author raodeming
  * @date 2019/12/25
  */
 public class ClickWordCaptchaServiceImpl extends AbstractCaptchaservice {
-
+    /**
+     * 右下角水印文字，默认 zbg.com
+     */
     private String waterMark;
-
+    /**
+     * 水印文字字体，默认宋体
+     */
     private String waterMarkFont;
-
+    /**
+     * 点选文字验证码的文字字体(宋体)
+     */
     private String fontType;
+    /**
+     * aes.key(16位，和前端加密保持一致)
+     */
+    private String aseKey;
 
     public ClickWordCaptchaServiceImpl() {
         super();
-        this.waterMark = TypeUtil.s(TProperties.getString("config", "captcha.water.mark"), "www.zbg.com");
+        this.waterMark = TypeUtil.s(TProperties.getString("config", "captcha.water.mark"), "zbg.com");
         this.waterMarkFont = TypeUtil.s(TProperties.getString("config", "captcha.water.font"), "宋体");
         this.fontType = TypeUtil.s(TProperties.getString("config", "captcha.font.type"), "宋体");
+        this.aseKey = TypeUtil.s(TProperties.getString("config", "captcha.aes.key"), "BGxdEUOZkXka4HSj");
     }
 
     @Override
     public ResponseModel get(CaptchaVO captchaVO) {
-//        BufferedImage bufferedImage = getBufferedImage(ImageUtils.getClickWordBgPath(captchaVO.getCaptchaOriginalPath()));
         BufferedImage bufferedImage = ImageUtils.getPicClick();
         CaptchaVO imageData = getImageData(bufferedImage);
-        if (imageData == null
-                || StringUtils.isBlank(imageData.getOriginalImageBase64())) {
+        if (imageData == null || StringUtils.isBlank(imageData.getOriginalImageBase64())) {
             return ResponseModel.errorMsg(RepCodeEnum.API_CAPTCHA_ERROR);
         }
         return ResponseModel.successData(imageData);
@@ -91,17 +99,17 @@ public class ClickWordCaptchaServiceImpl extends AbstractCaptchaservice {
         try {
             point = JSONObject.parseArray(s, Point.class);
             //aes解密
-            pointJson = decrypt(captchaVO.getPointJson());
+            pointJson = decrypt(captchaVO.getPointJson(), aseKey);
             point1 = JSONObject.parseArray(pointJson, Point.class);
         } catch (Exception e) {
             Logger.error("验证码坐标解析失败", e);
             return ResponseModel.errorMsg(e.getMessage());
         }
         for (int i = 0; i < point.size(); i++) {
-            if (point.get(i).x-HAN_ZI_SIZE > point1.get(i).x
-                    || point1.get(i).x > point.get(i).x+HAN_ZI_SIZE
-                    || point.get(i).y-HAN_ZI_SIZE > point1.get(i).y
-                    || point1.get(i).y > point.get(i).y+HAN_ZI_SIZE) {
+            if (point.get(i).x - HAN_ZI_SIZE > point1.get(i).x
+                    || point1.get(i).x > point.get(i).x + HAN_ZI_SIZE
+                    || point.get(i).y - HAN_ZI_SIZE > point1.get(i).y
+                    || point1.get(i).y > point.get(i).y + HAN_ZI_SIZE) {
                 return ResponseModel.errorMsg(RepCodeEnum.API_CAPTCHA_COORDINATE_ERROR);
             }
         }
@@ -135,7 +143,7 @@ public class ClickWordCaptchaServiceImpl extends AbstractCaptchaservice {
         for (int i = 0; i < wordCount; i++) {
             String word;
             do {
-                word = RandomUtils.getRandomHan(HAN_ZI);
+                word = RandomUtils.getRandom(HAN_ZI);
                 currentWords.add(word);
             } while (!currentWords.contains(word));
 
@@ -143,8 +151,8 @@ public class ClickWordCaptchaServiceImpl extends AbstractCaptchaservice {
             Point point = randomWordPoint(width, height, i, wordCount);
 
             //随机字体颜色
-            if (isFontColorRandom()){
-                backgroundGraphics.setColor(new Color(RandomUtils.getRandomInt(1,255),RandomUtils.getRandomInt(1,255),RandomUtils.getRandomInt(1,255)));
+            if (isFontColorRandom()) {
+                backgroundGraphics.setColor(new Color(RandomUtils.getRandomInt(1, 255), RandomUtils.getRandomInt(1, 255), RandomUtils.getRandomInt(1, 255)));
             } else {
                 backgroundGraphics.setColor(Color.BLACK);
             }
@@ -153,19 +161,19 @@ public class ClickWordCaptchaServiceImpl extends AbstractCaptchaservice {
             affineTransform.rotate(Math.toRadians(RandomUtils.getRandomInt(-45, 45)), 0, 0);
             Font rotatedFont = font.deriveFont(affineTransform);
             backgroundGraphics.setFont(rotatedFont);
-            backgroundGraphics.drawString(word, (int)point.getX(), (int)point.getY());
+            backgroundGraphics.drawString(word, (int) point.getX(), (int) point.getY());
 
-            if ((num-1) != i) {
+            if ((num - 1) != i) {
                 wordList.add(word);
                 pointList.add(point);
             }
         }
 
 
-        Font watermark = new Font(waterMarkFont, Font.BOLD, HAN_ZI_SIZE/2);
+        Font watermark = new Font(waterMarkFont, Font.BOLD, HAN_ZI_SIZE / 2);
         backgroundGraphics.setFont(watermark);
         backgroundGraphics.setColor(Color.white);
-        backgroundGraphics.drawString(waterMark, width-((HAN_ZI_SIZE/2)*(waterMark.length()))-5, height-(HAN_ZI_SIZE/2)+7);
+        backgroundGraphics.drawString(waterMark, width - ((HAN_ZI_SIZE / 2) * (waterMark.length())) - 5, height - (HAN_ZI_SIZE / 2) + 7);
 
         //创建合并图片
         BufferedImage combinedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
@@ -186,22 +194,23 @@ public class ClickWordCaptchaServiceImpl extends AbstractCaptchaservice {
 
     /**
      * 随机字体循环排序下标
-     * @param imageWidth 图片宽度
-     * @param imageHeight 图片高度
-     * @param wordSortIndex  字体循环排序下标(i)
-     * @param wordCount  字数量
+     *
+     * @param imageWidth    图片宽度
+     * @param imageHeight   图片高度
+     * @param wordSortIndex 字体循环排序下标(i)
+     * @param wordCount     字数量
      * @return
      */
     private static Point randomWordPoint(int imageWidth, int imageHeight, int wordSortIndex, int wordCount) {
-        int avgWidth = imageWidth / (wordCount+1);
+        int avgWidth = imageWidth / (wordCount + 1);
         int x, y;
-        if (avgWidth < HAN_ZI_SIZE_HALF){
-            x = RandomUtils.getRandomInt(1+HAN_ZI_SIZE_HALF, imageWidth);
+        if (avgWidth < HAN_ZI_SIZE_HALF) {
+            x = RandomUtils.getRandomInt(1 + HAN_ZI_SIZE_HALF, imageWidth);
         } else {
             if (wordSortIndex == 0) {
-                x = RandomUtils.getRandomInt(1+HAN_ZI_SIZE_HALF, avgWidth * (wordSortIndex+1) - HAN_ZI_SIZE_HALF );
-            }else {
-                x = RandomUtils.getRandomInt(avgWidth * wordSortIndex + HAN_ZI_SIZE_HALF, avgWidth * (wordSortIndex+1) -HAN_ZI_SIZE_HALF );
+                x = RandomUtils.getRandomInt(1 + HAN_ZI_SIZE_HALF, avgWidth * (wordSortIndex + 1) - HAN_ZI_SIZE_HALF);
+            } else {
+                x = RandomUtils.getRandomInt(avgWidth * wordSortIndex + HAN_ZI_SIZE_HALF, avgWidth * (wordSortIndex + 1) - HAN_ZI_SIZE_HALF);
             }
         }
         y = RandomUtils.getRandomInt(HAN_ZI_SIZE, imageHeight - HAN_ZI_SIZE);
