@@ -7,9 +7,7 @@
 package io.at.exchange.captcha.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
-import com.dd.tools.TProperties;
 import com.dd.tools.log.Logger;
-import io.at.base.utils.TypeUtil;
 import io.at.exchange.captcha.model.common.RepCodeEnum;
 import io.at.exchange.captcha.model.common.ResponseModel;
 import io.at.exchange.captcha.model.vo.CaptchaVO;
@@ -27,30 +25,39 @@ import java.util.Random;
 /**
  * 滑动验证码
  *
- *
  * @author raodeming
  * @date 2019/12/25
  */
 public class BlockPuzzleCaptchaServiceImpl extends AbstractCaptchaservice {
-
+    /**
+     * 右下角水印文字，默认 zbg.com
+     */
     private String waterMark;
-
+    /**
+     * 水印文字字体，默认宋体
+     */
     private String waterMarkFont;
-
+    /**
+     * 校验滑动拼图允许误差偏移量(默认5像素)
+     */
     private String slipOffset;
+    /**
+     * aes.key(16位，和前端加密保持一致)
+     */
+    private String aseKey;
 
     public BlockPuzzleCaptchaServiceImpl() {
         super();
-        this.waterMark = TypeUtil.s(TProperties.getString("config", "captcha.water.mark"), "www.zbg.com");
-        this.waterMarkFont = TypeUtil.s(TProperties.getString("config", "captcha.water.font"), "宋体");
-        this.slipOffset = TypeUtil.s(TProperties.getString("config", "captcha.slip.offset"), "5");
+        this.waterMark = getConfig("captcha.water.mark", "zbg.com");
+        this.waterMarkFont = getConfig("captcha.water.font", "宋体");
+        this.slipOffset = getConfig("captcha.slip.offset", "5");
+        this.aseKey = getConfig("captcha.aes.key", "BGxdEUOZkXka4HSj");
     }
 
     @Override
     public ResponseModel get(CaptchaVO captchaVO) {
 
         //原生图片
-//        BufferedImage originalImage = getBufferedImage(ImageUtils.getBlockPuzzleBgPath(captchaVO.getCaptchaOriginalPath()));
         BufferedImage originalImage = ImageUtils.getOriginal();
         //设置水印
         Graphics backgroundGraphics = originalImage.getGraphics();
@@ -62,7 +69,6 @@ public class BlockPuzzleCaptchaServiceImpl extends AbstractCaptchaservice {
         backgroundGraphics.drawString(waterMark, width - ((HAN_ZI_SIZE / 2) * (waterMark.length())) - 5, height - (HAN_ZI_SIZE / 2) + 7);
 
         //抠图图片
-//        BufferedImage   jigsawImage = getBufferedImage(ImageUtils.getBlockPuzzleJigsawPath(captchaVO.getCaptchaOriginalPath()));
         BufferedImage jigsawImage = ImageUtils.getSlidingBlock();
         CaptchaVO captcha = pictureTemplatesCut(originalImage, jigsawImage);
         if (captcha == null
@@ -89,14 +95,14 @@ public class BlockPuzzleCaptchaServiceImpl extends AbstractCaptchaservice {
         try {
             point = JSONObject.parseObject(s, Point.class);
             //aes解密
-            pointJson = decrypt(captchaVO.getPointJson());
+            pointJson = decrypt(captchaVO.getPointJson(), aseKey);
             point1 = JSONObject.parseObject(pointJson, Point.class);
         } catch (Exception e) {
             Logger.error("验证码坐标解析失败", e);
             return ResponseModel.errorMsg(e.getMessage());
         }
-        if (point.x-Integer.parseInt(slipOffset) > point1.x
-                || point1.x > point.x+Integer.parseInt(slipOffset)
+        if (point.x - Integer.parseInt(slipOffset) > point1.x
+                || point1.x > point.x + Integer.parseInt(slipOffset)
                 || point.y != point1.y) {
             return ResponseModel.errorMsg(RepCodeEnum.API_CAPTCHA_COORDINATE_ERROR);
         }
@@ -114,10 +120,8 @@ public class BlockPuzzleCaptchaServiceImpl extends AbstractCaptchaservice {
 
     /**
      * 根据模板切图
-     *
-     * @throws Exception
      */
-    public CaptchaVO pictureTemplatesCut(BufferedImage originalImage, BufferedImage jigsawImage){
+    public CaptchaVO pictureTemplatesCut(BufferedImage originalImage, BufferedImage jigsawImage) {
         try {
             CaptchaVO dataVO = new CaptchaVO();
 
@@ -128,8 +132,8 @@ public class BlockPuzzleCaptchaServiceImpl extends AbstractCaptchaservice {
 
             //随机生成拼图坐标
             Point point = generateJigsawPoint(originalWidth, originalHeight, jigsawWidth, jigsawHeight);
-            int x = (int)point.getX();
-            int y = (int)point.getY();
+            int x = (int) point.getX();
+            int y = (int) point.getY();
 
             //生成新的拼图图像
             BufferedImage newJigsawImage = new BufferedImage(jigsawWidth, jigsawHeight, jigsawImage.getType());
@@ -158,27 +162,23 @@ public class BlockPuzzleCaptchaServiceImpl extends AbstractCaptchaservice {
             dataVO.setJigsawImageBase64(AESUtil.base64Encode(jigsawImages).replaceAll("\r|\n", ""));
             dataVO.setToken(RandomUtils.getUUID());
 
+//            base64StrToImage(AESUtil.base64Encode(oriCopyImages), "/Users/zhangzhipeng/Pictures/原图.png");
+//            base64StrToImage(AESUtil.base64Encode(jigsawImages), "/Users/zhangzhipeng/Pictures/滑动.png");
+
 
             //将坐标信息存入redis中
             String codeKey = String.format(REDIS_CAPTCHA_KEY, dataVO.getToken());
             captchaCacheService.set(codeKey, JSONObject.toJSONString(point), EXPIRESIN_SECONDS);
-
             return dataVO;
-        } catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
     }
 
+
     /**
      * 抠图后原图生成
-     *
-     * @param oriImage
-     * @param templateImage
-     * @param x
-     * @param y
-     * @return
-     * @throws Exception
      */
     private static byte[] dealOriPictureByTemplate(BufferedImage oriImage, BufferedImage templateImage, int x, int y) throws Exception {
         // 源文件备份图像矩阵 支持alpha通道的rgb图像
@@ -217,18 +217,12 @@ public class BlockPuzzleCaptchaServiceImpl extends AbstractCaptchaservice {
         }
         ByteArrayOutputStream os = new ByteArrayOutputStream();//新建流。
         ImageIO.write(oriCopyImage, "png", os);//利用ImageIO类提供的write方法，将bi以png图片的数据模式写入流。
-        byte b[] = os.toByteArray();//从流中获取数据数组。
-        return b;
+        return os.toByteArray();
     }
 
 
     /**
      * 根据模板图片抠图
-     * @param oriImage
-     * @param templateImage
-     * @param targetImage
-     * @return
-     * @throws Exception
      */
     private static BufferedImage dealCutPictureByTemplate(BufferedImage oriImage, BufferedImage templateImage, BufferedImage targetImage) {
         // 源文件图像矩阵
@@ -246,15 +240,13 @@ public class BlockPuzzleCaptchaServiceImpl extends AbstractCaptchaservice {
                     targetImage.setRGB(i, j, oriImageData[i][j]);
                     int rgbBri = targetImage.getRGB(i, j);
                     if (j > 3 && j < templateImageData[0].length - 3) {
-                        int rgbBefore = templateImageData[i][j-1];
-                        int rgbAfter = templateImageData[i][j+1];
+                        int rgbBefore = templateImageData[i][j - 1];
+                        int rgbAfter = templateImageData[i][j + 1];
                         if (rgbBefore > 0 || rgbAfter > 0) {
                             int rgb1 = new Color(255, 255, 255, 150).getRGB();
                             targetImage.setRGB(i, j, rgb1);
                         }
                     }
-
-
                 }
 
 
@@ -265,11 +257,8 @@ public class BlockPuzzleCaptchaServiceImpl extends AbstractCaptchaservice {
 
     /**
      * 生成图像矩阵
-     * @param
-     * @return
-     * @throws Exception
      */
-    private static int[][] getData(BufferedImage bimg){
+    private static int[][] getData(BufferedImage bimg) {
         int[][] data = new int[bimg.getWidth()][bimg.getHeight()];
         for (int i = 0; i < bimg.getWidth(); i++) {
             for (int j = 0; j < bimg.getHeight(); j++) {
@@ -281,6 +270,7 @@ public class BlockPuzzleCaptchaServiceImpl extends AbstractCaptchaservice {
 
     /**
      * 随机生成拼图坐标
+     *
      * @param originalWidth
      * @param originalHeight
      * @param jigsawWidth
