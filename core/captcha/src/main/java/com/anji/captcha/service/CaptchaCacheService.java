@@ -4,7 +4,7 @@
  *http://www.anji-plus.com
  *All rights reserved.
  */
-package io.at.exchange.captcha.service;
+package com.anji.captcha.service;
 
 /**
  * 验证码缓存接口

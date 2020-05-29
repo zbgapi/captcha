@@ -4,18 +4,16 @@
  *http://www.anji-plus.com
  *All rights reserved.
  */
-package io.at.exchange.captcha.service.impl;
+package com.anji.captcha.service.impl;
 
 
-import io.at.base.utils.TypeUtil;
-import io.at.exchange.captcha.model.common.RepCodeEnum;
-import io.at.exchange.captcha.model.common.ResponseModel;
-import io.at.exchange.captcha.model.vo.CaptchaVO;
-import io.at.exchange.captcha.service.CaptchaCacheService;
-import io.at.exchange.captcha.service.CaptchaService;
-import io.at.exchange.captcha.util.AESUtil;
-import io.at.exchange.captcha.util.ImageUtils;
-import io.at.exchange.captcha.util.StringUtils;
+import com.anji.captcha.model.common.RepCodeEnum;
+import com.anji.captcha.model.common.ResponseModel;
+import com.anji.captcha.model.vo.CaptchaVO;
+import com.anji.captcha.service.CaptchaCacheService;
+import com.anji.captcha.service.CaptchaService;
+import com.anji.captcha.util.ImageUtils;
+import com.anji.captcha.util.StringUtils;
 import com.dd.tools.TProperties;
 import com.dd.tools.log.Logger;
 import io.at.base.config.SignCacheConfig;
@@ -38,10 +36,6 @@ public class DefaultCaptchaServiceImpl implements CaptchaService {
      */
     private String captchaOriginalPathClick;
     /**
-     * aes.key(16位，和前端加密保持一致)
-     */
-    private String aseKey;
-    /**
      * 缓存Key
      */
     protected static String REDIS_SECOND_CAPTCHA_KEY = "RUNNING:CAPTCHA:second-%s";
@@ -51,7 +45,6 @@ public class DefaultCaptchaServiceImpl implements CaptchaService {
     private Map<String, CaptchaService> instances = new HashMap<>();
 
     public DefaultCaptchaServiceImpl() {
-        this.aseKey = TypeUtil.s(TProperties.getString("config", "captcha.aes.key"), "BGxdEUOZkXka4HSj");
         initCache();
 
         instances.put("blockPuzzleCaptchaService", new BlockPuzzleCaptchaServiceImpl());
@@ -116,21 +109,12 @@ public class DefaultCaptchaServiceImpl implements CaptchaService {
             return RepCodeEnum.NULL_ERROR.parseError("captchaVerification");
         }
         try {
-            //aes解密
-            String s = AESUtil.aesDecrypt(captchaVO.getCaptchaVerification(), aseKey);
-            String token = s.split("---")[0];
-            String pointJson = s.split("---")[1];
-            //取坐标信息
-            String codeKey = String.format(REDIS_SECOND_CAPTCHA_KEY, token);
+            String codeKey = String.format(REDIS_SECOND_CAPTCHA_KEY, captchaVO.getCaptchaVerification());
             if (!captchaCacheService.exists(codeKey)) {
                 return ResponseModel.errorMsg(RepCodeEnum.API_CAPTCHA_INVALID);
             }
-            String redisData = captchaCacheService.get(codeKey);
             //二次校验取值后，即刻失效
             captchaCacheService.delete(codeKey);
-            if (!pointJson.equals(redisData)) {
-                return ResponseModel.errorMsg(RepCodeEnum.API_CAPTCHA_COORDINATE_ERROR);
-            }
         } catch (Exception e) {
             Logger.error("验证码坐标解析失败", e);
             return ResponseModel.errorMsg(e.getMessage());

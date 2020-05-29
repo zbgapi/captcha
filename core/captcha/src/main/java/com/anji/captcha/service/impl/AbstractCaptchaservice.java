@@ -4,15 +4,15 @@
  *http://www.anji-plus.com
  *All rights reserved.
  */
-package io.at.exchange.captcha.service.impl;
+package com.anji.captcha.service.impl;
 
 import com.dd.tools.TProperties;
 import io.at.base.config.SignCacheConfig;
 import io.at.base.utils.TypeUtil;
-import io.at.exchange.captcha.service.CaptchaCacheService;
-import io.at.exchange.captcha.service.CaptchaService;
-import io.at.exchange.captcha.util.AESUtil;
-import io.at.exchange.captcha.util.StringUtils;
+import com.anji.captcha.service.CaptchaCacheService;
+import com.anji.captcha.service.CaptchaService;
+import com.anji.captcha.util.AESUtil;
+import com.anji.captcha.util.StringUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;

@@ -1,7 +1,7 @@
-package io.at.exchange.captcha.service.impl;
+package com.anji.captcha.service.impl;
 
 import com.dd.tools.cache.CachedHashMap;
-import io.at.exchange.captcha.service.CaptchaCacheService;
+import com.anji.captcha.service.CaptchaCacheService;
 
 /**
  * 对于分布式部署的应用，我们建议应用自己实现CaptchaCacheService，比如用Redis，参考service/spring-boot代码示例。

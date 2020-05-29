@@ -4,7 +4,7 @@
  *http://www.anji-plus.com
  *All rights reserved.
  */
-package io.at.exchange.captcha.model.vo;
+package com.anji.captcha.model.vo;
 
 import java.awt.*;
 import java.io.Serializable;
@@ -29,6 +29,8 @@ public class CaptchaVO implements Serializable {
     private String captchaFontType;
 
     private Integer captchaFontSize;
+
+    private String secretKey;
 
     /**
      * 原生图片base64
@@ -76,6 +78,11 @@ public class CaptchaVO implements Serializable {
      * 后台二次校验参数
      */
     private String captchaVerification;
+
+    /**
+     * 是否使用随机密码加密
+     */
+    private Boolean randomKey = false;
 
 
     public String getCaptchaId() {
@@ -196,5 +203,21 @@ public class CaptchaVO implements Serializable {
 
     public void setCaptchaVerification(String captchaVerification) {
         this.captchaVerification = captchaVerification;
+    }
+
+    public String getSecretKey() {
+        return secretKey;
+    }
+
+    public void setSecretKey(String secretKey) {
+        this.secretKey = secretKey;
+    }
+
+    public Boolean getRandomKey() {
+        return randomKey;
+    }
+
+    public void setRandomKey(Boolean randomKey) {
+        this.randomKey = randomKey;
     }
 }

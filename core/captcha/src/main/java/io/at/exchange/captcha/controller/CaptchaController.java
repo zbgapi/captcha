@@ -6,10 +6,10 @@
  */
 package io.at.exchange.captcha.controller;
 
-import io.at.exchange.captcha.model.common.ResponseModel;
-import io.at.exchange.captcha.model.vo.CaptchaVO;
-import io.at.exchange.captcha.service.CaptchaService;
-import io.at.exchange.captcha.service.impl.DefaultCaptchaServiceImpl;
+import com.anji.captcha.model.common.ResponseModel;
+import com.anji.captcha.model.vo.CaptchaVO;
+import com.anji.captcha.service.CaptchaService;
+import com.anji.captcha.service.impl.DefaultCaptchaServiceImpl;
 import com.dd.http.server.module.annontationRouter.annotation.Body;
 import com.dd.http.server.module.annontationRouter.annotation.Router;
 

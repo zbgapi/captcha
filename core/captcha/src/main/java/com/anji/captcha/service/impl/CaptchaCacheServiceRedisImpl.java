@@ -1,6 +1,6 @@
-package io.at.exchange.captcha.service.impl;
+package com.anji.captcha.service.impl;
 
-import io.at.exchange.captcha.service.CaptchaCacheService;
+import com.anji.captcha.service.CaptchaCacheService;
 import io.at.base.cache.GlobalCache;
 
 /**

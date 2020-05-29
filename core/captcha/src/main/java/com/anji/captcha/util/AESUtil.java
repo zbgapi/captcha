@@ -4,7 +4,7 @@
  *http://www.anji-plus.com
  *All rights reserved.
  */
-package io.at.exchange.captcha.util;
+package com.anji.captcha.util;
 
 
 import javax.crypto.Cipher;
@@ -15,44 +15,18 @@ import java.util.Base64;
 
 
 public class AESUtil {
-    /**
-     * 密钥 (需要前端和后端保持一致)
-     */
-    private static final String KEY = "BGxdEUOZkXka4HSj";
-    /**
-     * 算法
-     */
+    //算法
     private static final String ALGORITHMSTR = "AES/ECB/PKCS5Padding";
 
     /**
-     * aes解密
+     * 获取随机key
      *
-     * @param encrypt 内容
-     * @return 解密后的字符串，解密失败返回空
+     * @return
      */
-    public static String aesDecrypt(String encrypt) {
-        try {
-            return aesDecrypt(encrypt, KEY);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "";
-        }
+    public static String getKey() {
+        return RandomUtils.getRandomString(16);
     }
 
-    /**
-     * aes加密
-     *
-     * @param content 待加密字符串
-     * @return 加密后的base64字符串 加密失败返回空
-     */
-    public static String aesEncrypt(String content) {
-        try {
-            return aesEncrypt(content, KEY);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "";
-        }
-    }
 
     /**
      * 将byte[]转为各种进制的字符串
@@ -112,6 +86,9 @@ public class AESUtil {
      * @throws Exception 加密失败
      */
     public static String aesEncrypt(String content, String encryptKey) throws Exception {
+        if (StringUtils.isBlank(encryptKey)) {
+            return content;
+        }
         return base64Encode(aesEncryptToBytes(content, encryptKey));
     }
 
@@ -143,8 +120,8 @@ public class AESUtil {
      * @throws Exception 解密失败
      */
     public static String aesDecrypt(String encryptStr, String decryptKey) throws Exception {
-        if (StringUtils.isEmpty(decryptKey)) {
-            decryptKey = KEY;
+        if (StringUtils.isBlank(decryptKey)) {
+            return encryptStr;
         }
         return StringUtils.isEmpty(encryptStr) ? null : aesDecryptByBytes(base64Decode(encryptStr), decryptKey);
     }
